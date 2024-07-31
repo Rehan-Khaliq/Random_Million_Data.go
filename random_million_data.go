@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"encoding/csv"
 	"fmt"
 	"math/rand"
@@ -10,30 +11,44 @@ import (
 )
 
 func main() {
-	csvfile, err := os.Create("Million_data.csv")
-
+	// Creating the zip file
+	zipFile, err := os.Create("data.zip")
 	if err != nil {
-		fmt.Println("Error Creating File", err)
-
+		fmt.Println("Error creating zip file:", err)
+		return
 	}
-	defer csvfile.Close()
-	cswriter := csv.NewWriter(csvfile)
-	defer cswriter.Flush()
+	defer zipFile.Close()
 
-	// By Applying Random Number Generator
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	// Creating a CSV file inside the zip
+	csvFile, err := zipWriter.Create("Million_data.csv")
+	if err != nil {
+		fmt.Println("Error creating CSV file inside zip:", err)
+		return
+	}
+
+	csvWriter := csv.NewWriter(csvFile)
+	defer csvWriter.Flush() // Use Flush here because we write to a zip
+
 	rand.Seed(time.Now().Unix())
-	for i := 0; i < 1000000; i++ { // corrected syntax errors in the loop
-		randomnumer := generateRandomNumber()
-		if err := cswriter.Write([]string{randomnumer}); err != nil {
-			fmt.Println("Error Writing To CSV:", err)
 
+	// Generating and writing 1 million random numbers
+	for i := 0; i < 1000000; i++ {
+		randomNumber := generateRandomNumber()
+		if err := csvWriter.Write([]string{randomNumber}); err != nil {
+			fmt.Println("Error writing to CSV:", err)
+			return
 		}
 	}
-	fmt.Println("1 Million Data written successfully") // corrected spelling error
+
+	// Corrected the print statement's placement
+	fmt.Println("1 million records written successfully to Million_data.csv inside data.zip")
 }
 
 func generateRandomNumber() string {
-	firstDigit := rand.Intn(8) + 2
-	remainingDigit := rand.Int63n(900000000) + 100000000 // 9 remaining digits
-	return strconv.Itoa(firstDigit) + strconv.FormatInt(remainingDigit, 10)
+	firstDigit := rand.Intn(8) + 2                        // Ensures the first digit is not zero
+	remainingDigits := rand.Int63n(900000000) + 100000000 // Generates the remaining 8 digits
+	return strconv.Itoa(firstDigit) + strconv.FormatInt(remainingDigits, 10)
 }
